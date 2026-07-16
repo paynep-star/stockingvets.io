@@ -16,6 +16,13 @@ def create_app(config_name='development'):
     jwt.init_app(app)
     CORS(app)
     
+    # Import models after db init
+    from models.user import User
+    from models.portfolio import Portfolio, Stock
+    from models.verification import Verification
+    from models.forum import ForumThread, ForumResponse
+    
+    # Import routes
     from routes.auth import auth_bp
     from routes.portfolio import portfolio_bp
     from routes.verification import verification_bp

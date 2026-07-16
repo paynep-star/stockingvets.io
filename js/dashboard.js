@@ -1,9 +1,14 @@
+// Enhanced Dashboard with featured assets
+
 let portfolioChart = null;
 
 async function loadDashboard() {
     try {
         const token = localStorage.getItem('authToken');
-        if (!token) return;
+        if (!token) {
+            loadFeaturedAssets();
+            return;
+        }
         
         const portfolio = await api.getPortfolio();
         updateStats(portfolio);
@@ -11,7 +16,67 @@ async function loadDashboard() {
         drawPortfolioChart(portfolio);
     } catch (error) {
         console.error('Error loading dashboard:', error);
+        loadFeaturedAssets();
     }
+}
+
+async function loadFeaturedAssets() {
+    try {
+        const response = await api.getFeaturedAssets();
+        displayFeaturedAssets(response.featured);
+    } catch (error) {
+        console.error('Error loading featured assets:', error);
+        // Show default featured assets
+        const defaultAssets = [
+            { symbol: 'BTC', name: 'Bitcoin', type: 'crypto', price: 45230.50, change: '+5.2%', icon: '₿' },
+            { symbol: 'GLD', name: 'Gold ETF', type: 'commodity', price: 195.45, change: '+1.8%', icon: '🏆' },
+            { symbol: 'SLV', name: 'Silver ETF', type: 'commodity', price: 28.75, change: '+2.3%', icon: '💎' },
+            { symbol: 'BTSD', name: 'Bitshares', type: 'crypto', price: 0.08234, change: '+0.8%', icon: '🔗' },
+            { symbol: 'AAPL', name: 'Apple', type: 'stock', price: 150.25, change: '+3.1%', icon: '📱' },
+            { symbol: 'TSLA', name: 'Tesla', type: 'stock', price: 242.30, change: '-1.5%', icon: '🚗' }
+        ];
+        displayFeaturedAssets(defaultAssets);
+    }
+}
+
+function displayFeaturedAssets(assets) {
+    const container = document.getElementById('featuredAssets');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    assets.forEach(asset => {
+        const changeClass = asset.change.startsWith('+') ? 'positive' : 'negative';
+        const card = document.createElement('div');
+        card.className = 'featured-card';
+        card.style.cssText = `
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        `;
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div>
+                    <h4 style="color: #667eea; margin: 0 0 0.5rem 0;">${asset.icon} ${asset.name}</h4>
+                    <p style="color: #999; margin: 0; font-size: 0.9rem;">${asset.symbol} • ${asset.type}</p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="font-size: 1.2rem; font-weight: bold; margin: 0;">$${asset.price.toFixed(2)}</p>
+                    <p style="margin: 0; class="${changeClass}" class="${changeClass}">${asset.change}</p>
+                </div>
+            </div>
+        `;
+        card.onclick = () => addAssetToPortfolio(asset.symbol);
+        container.appendChild(card);
+    });
+}
+
+function addAssetToPortfolio(symbol) {
+    showAddStockForm(symbol);
 }
 
 function updateStats(portfolio) {
@@ -107,18 +172,19 @@ function drawPortfolioChart(portfolio) {
     });
 }
 
-function showAddStockForm() {
+function showAddStockForm(preselectedSymbol = null) {
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.display = 'flex';
     modal.innerHTML = `
         <div class="modal-content">
             <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-            <h2>Add Stock to Portfolio</h2>
-            <input type="text" id="stockSymbol" placeholder="Stock Symbol (e.g., AAPL)" class="input-field">
-            <input type="number" id="stockShares" placeholder="Number of Shares" class="input-field">
-            <input type="number" id="stockPrice" placeholder="Purchase Price per Share" class="input-field">
-            <button class="btn-primary" onclick="addStockHandler()">Add Stock</button>
+            <h2>Add Asset to Portfolio</h2>
+            <p style="color: #999; font-size: 0.9rem;">Stocks • Cryptocurrencies • Commodities</p>
+            <input type="text" id="stockSymbol" placeholder="Symbol (e.g., AAPL, BTC, GLD)" class="input-field" value="${preselectedSymbol || ''}">
+            <input type="number" id="stockShares" placeholder="Quantity" class="input-field" step="0.00001">
+            <input type="number" id="stockPrice" placeholder="Purchase Price per Unit" class="input-field" step="0.01">
+            <button class="btn-primary" onclick="addStockHandler()">Add to Portfolio</button>
         </div>
     `;
     document.body.appendChild(modal);
@@ -137,9 +203,10 @@ async function addStockHandler() {
     try {
         await api.addStock({ symbol, shares, purchasePrice: price });
         loadDashboard();
-        alert('Stock added successfully!');
+        document.querySelector('.modal').remove();
+        alert('Asset added successfully!');
     } catch (error) {
-        alert('Error adding stock: ' + error.message);
+        alert('Error adding asset: ' + error.message);
     }
 }
 
@@ -149,7 +216,7 @@ async function removeStockFromPortfolio(symbol) {
             await api.removeStock(symbol);
             loadDashboard();
         } catch (error) {
-            alert('Error removing stock: ' + error.message);
+            alert('Error removing asset: ' + error.message);
         }
     }
 }

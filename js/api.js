@@ -1,6 +1,15 @@
-// API Configuration
+// API Configuration - Update with your actual URLs
 const API_BASE_URL = 'http://localhost:5000/api';
-const STOCK_API_KEY = 'YOUR_STOCK_API_KEY';
+
+// Featured assets to display on dashboard
+const FEATURED_ASSETS = [
+    { symbol: 'BTC', name: 'Bitcoin', type: 'crypto' },
+    { symbol: 'GLD', name: 'Gold ETF', type: 'commodity' },
+    { symbol: 'SLV', name: 'Silver ETF', type: 'commodity' },
+    { symbol: 'BTSD', name: 'Bitshares', type: 'crypto' },
+    { symbol: 'AAPL', name: 'Apple', type: 'stock' },
+    { symbol: 'TSLA', name: 'Tesla', type: 'stock' }
+];
 
 // API Utility Functions
 const api = {
@@ -95,6 +104,10 @@ const api = {
     
     async getStockHistory(symbol, days = 30) {
         return this.request(`/stocks/${symbol}/history?days=${days}`);
+    },
+    
+    async getFeaturedAssets() {
+        return this.request('/stocks/featured');
     },
     
     async getForumThreads(page = 1) {
